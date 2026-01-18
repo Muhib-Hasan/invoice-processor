@@ -2,6 +2,7 @@
 bin/
 dist/
 build/
+/invoice-processor
 *.exe
 *.dll
 *.so
@@ -44,3 +45,5 @@ go.work
 *.pprof
 *.prof
 debug
+
+test/invoices

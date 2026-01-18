@@ -1,0 +1,44 @@
+# Git
+.git
+.gitignore
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Documentation
+*.md
+!README.md
+docs/
+plans/
+
+# Test files
+*_test.go
+test/
+testdata/
+
+# Build artifacts
+*.exe
+*.dll
+*.so
+*.dylib
+bin/
+dist/
+
+# Debug files
+*.log
+*.out
+
+# Local config
+.env
+.env.*
+!.env.example
+
+# Claude/AI
+.claude/
+
+# Misc
+.DS_Store
+Thumbs.db

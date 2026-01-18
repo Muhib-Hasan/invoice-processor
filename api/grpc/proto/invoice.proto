@@ -1,0 +1,130 @@
+syntax = "proto3";
+
+package invoice;
+
+option go_package = "github.com/rezonia/invoice-processor/api/grpc/gen;invoice";
+
+// InvoiceService provides invoice processing operations
+service InvoiceService {
+  // ProcessXML processes an XML invoice
+  rpc ProcessXML(ProcessXMLRequest) returns (ProcessResponse);
+
+  // ProcessPDF processes a PDF invoice
+  rpc ProcessPDF(ProcessPDFRequest) returns (ProcessResponse);
+
+  // ProcessImage processes an image invoice
+  rpc ProcessImage(ProcessImageRequest) returns (ProcessResponse);
+
+  // ProcessAuto auto-detects format and processes
+  rpc ProcessAuto(ProcessAutoRequest) returns (ProcessResponse);
+
+  // Validate validates an invoice
+  rpc Validate(ValidateRequest) returns (ValidateResponse);
+
+  // GetInfo returns file format information
+  rpc GetInfo(GetInfoRequest) returns (GetInfoResponse);
+}
+
+message ProcessXMLRequest {
+  bytes content = 1;
+}
+
+message ProcessPDFRequest {
+  bytes content = 1;
+  bytes image_data = 2;  // Optional image for LLM fallback
+  string mime_type = 3;
+}
+
+message ProcessImageRequest {
+  bytes content = 1;
+  string mime_type = 2;
+}
+
+message ProcessAutoRequest {
+  bytes content = 1;
+  string mime_type = 2;  // Optional hint
+}
+
+message ProcessResponse {
+  Invoice invoice = 1;
+  string method = 2;
+  double confidence = 3;
+  repeated string warnings = 4;
+  string error = 5;
+}
+
+message ValidateRequest {
+  bytes content = 1;
+  bool strict = 2;
+}
+
+message ValidateResponse {
+  bool valid = 1;
+  repeated string errors = 2;
+  repeated string warnings = 3;
+}
+
+message GetInfoRequest {
+  bytes content = 1;
+}
+
+message GetInfoResponse {
+  string format = 1;
+  string mime_type = 2;
+  int64 size = 3;
+}
+
+// Invoice represents extracted invoice data
+message Invoice {
+  string id = 1;
+  string number = 2;
+  string series = 3;
+  string date = 4;  // ISO 8601 format
+  string type = 5;
+  string provider = 6;
+  Party seller = 7;
+  Party buyer = 8;
+  repeated LineItem items = 9;
+  string subtotal_amount = 10;  // Decimal as string
+  string tax_amount = 11;
+  string total_amount = 12;
+  string currency = 13;
+  string exchange_rate = 14;
+  string remarks = 15;
+  string payment_terms = 16;
+  Signature signature = 17;
+}
+
+message Party {
+  string name = 1;
+  string tax_id = 2;
+  string address = 3;
+  string phone = 4;
+  string email = 5;
+  string bank_account = 6;
+  string bank_name = 7;
+}
+
+message LineItem {
+  int32 number = 1;
+  string code = 2;
+  string name = 3;
+  string description = 4;
+  string unit = 5;
+  string quantity = 6;  // Decimal as string
+  string unit_price = 7;
+  string discount = 8;
+  int32 vat_rate = 9;
+  string amount = 10;
+  string discount_amt = 11;
+  string vat_amount = 12;
+  string total = 13;
+}
+
+message Signature {
+  string value = 1;
+  string date = 2;
+  string signer_name = 3;
+  string signer_position = 4;
+  string cert_serial = 5;
+}
