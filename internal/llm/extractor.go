@@ -80,6 +80,16 @@ func (e *Extractor) ExtractFromImage(ctx context.Context, imageData []byte, mime
 	return e.parseResponse(response)
 }
 
+// ExtractFromImageAuto extracts data from image, auto-detecting document type (invoice or receipt)
+func (e *Extractor) ExtractFromImageAuto(ctx context.Context, imageData []byte, mimeType string) (*model.Invoice, error) {
+	response, err := e.client.ChatWithImage(ctx, e.visionModel, SystemPromptReceiptExtractor, UserPromptAutoDetectExtraction, imageData, mimeType)
+	if err != nil {
+		return nil, fmt.Errorf("LLM request failed: %w", err)
+	}
+
+	return e.parseResponse(response)
+}
+
 // ExtractFromOCRText extracts invoice data from potentially noisy OCR text
 func (e *Extractor) ExtractFromOCRText(ctx context.Context, ocrText string) (*model.Invoice, error) {
 	prompt := fmt.Sprintf(UserPromptOCRCorrection, ocrText)

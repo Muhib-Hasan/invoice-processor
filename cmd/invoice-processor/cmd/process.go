@@ -105,7 +105,11 @@ func runProcess(cmd *cobra.Command, args []string) error {
 		if result.Error != "" {
 			printVerbose("  Error: %s\n", result.Error)
 		} else {
-			printVerbose("  Method: %s, Confidence: %.2f\n", result.Method, result.Confidence)
+			docType := "Invoice"
+			if result.Invoice != nil && result.Invoice.DocumentType == model.DocumentTypeReceipt {
+				docType = "Receipt"
+			}
+			printVerbose("  Type: %s, Method: %s, Confidence: %.2f\n", docType, result.Method, result.Confidence)
 		}
 	}
 

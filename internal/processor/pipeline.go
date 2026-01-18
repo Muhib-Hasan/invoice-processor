@@ -20,6 +20,12 @@ const (
 	MethodLLMVision ExtractionMethod = "llm_vision"
 )
 
+// Confidence levels for extraction methods
+const (
+	ConfidenceVisionInvoice = 0.80 // Standard document OCR quality
+	ConfidenceVisionReceipt = 0.75 // Lower due to thermal paper degradation
+)
+
 // Result represents the extraction result with metadata
 type Result struct {
 	Invoice    *model.Invoice   `json:"invoice"`
@@ -217,7 +223,8 @@ func (p *Pipeline) tryLLMVisionExtraction(ctx context.Context, data []byte, mime
 		imageMimeType = mimeType
 	}
 
-	invoice, err := p.llmExtractor.ExtractFromImage(ctx, imageData, imageMimeType)
+	// Use auto-detect extraction for images (handles both invoices and receipts)
+	invoice, err := p.llmExtractor.ExtractFromImageAuto(ctx, imageData, imageMimeType)
 	if err != nil {
 		return &Result{
 			Error:    err,
@@ -225,10 +232,16 @@ func (p *Pipeline) tryLLMVisionExtraction(ctx context.Context, data []byte, mime
 		}
 	}
 
+	// Set confidence based on document type
+	confidence := ConfidenceVisionInvoice
+	if invoice != nil && invoice.DocumentType == model.DocumentTypeReceipt {
+		confidence = ConfidenceVisionReceipt
+	}
+
 	return &Result{
 		Invoice:    invoice,
 		Method:     MethodLLMVision,
-		Confidence: 0.80, // Vision slightly less reliable than text
+		Confidence: confidence,
 	}
 }
 
