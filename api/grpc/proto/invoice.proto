@@ -23,6 +23,9 @@ service InvoiceService {
 
   // GetInfo returns file format information
   rpc GetInfo(GetInfoRequest) returns (GetInfoResponse);
+
+  // VerifySignature verifies digital signature on XML or PDF documents
+  rpc VerifySignature(VerifyRequest) returns (VerifyResponse);
 }
 
 message ProcessXMLRequest {
@@ -72,6 +75,35 @@ message GetInfoResponse {
   string format = 1;
   string mime_type = 2;
   int64 size = 3;
+}
+
+message VerifyRequest {
+  bytes content = 1;
+  string ca_cert_pem = 2;  // Optional custom CA certificate (PEM format)
+  bool skip_ocsp = 3;      // Skip OCSP revocation check
+}
+
+message VerifyResponse {
+  bool valid = 1;
+  bool signature_found = 2;
+  bool signature_valid = 3;
+  bool cert_chain_valid = 4;
+  bool not_revoked = 5;
+  bool timestamp_valid = 6;
+  string format = 7;
+  SignerInfo signer = 8;
+  string signed_at = 9;    // ISO 8601 format
+  repeated string warnings = 10;
+  repeated string errors = 11;
+}
+
+message SignerInfo {
+  string name = 1;
+  string organization = 2;
+  string serial_number = 3;
+  string issuer = 4;
+  string valid_from = 5;   // ISO 8601 format
+  string valid_to = 6;     // ISO 8601 format
 }
 
 // Invoice represents extracted invoice data

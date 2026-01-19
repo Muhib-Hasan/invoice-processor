@@ -9,6 +9,10 @@ import (
 
 	"github.com/rezonia/invoice-processor/internal/llm"
 	"github.com/rezonia/invoice-processor/internal/processor"
+	"github.com/rezonia/invoice-processor/internal/signature"
+	"github.com/rezonia/invoice-processor/internal/signature/pdf"
+	"github.com/rezonia/invoice-processor/internal/signature/trust"
+	"github.com/rezonia/invoice-processor/internal/signature/xml"
 )
 
 // Config holds server configuration
@@ -25,9 +29,11 @@ type Config struct {
 
 // Server represents the HTTP API server
 type Server struct {
-	config   *Config
-	router   *gin.Engine
-	pipeline *processor.Pipeline
+	config           *Config
+	router           *gin.Engine
+	pipeline         *processor.Pipeline
+	verifierRegistry *signature.VerifierRegistry
+	pdfVerifier      *pdf.PDFVerifier
 }
 
 // NewServer creates a new API server
@@ -70,10 +76,20 @@ func NewServer(config *Config) *Server {
 		processor.WithLLMExtractor(llmExtractor),
 	)
 
+	// Create signature verifiers
+	trustStore, _ := trust.NewTrustStore()
+	xmlVerifier := xml.NewXMLVerifier(trustStore)
+	pdfVerifier := pdf.NewPDFVerifier(trustStore)
+	verifierRegistry := signature.NewVerifierRegistry()
+	verifierRegistry.Register(xmlVerifier)
+	verifierRegistry.Register(pdfVerifier)
+
 	s := &Server{
-		config:   config,
-		router:   router,
-		pipeline: pipeline,
+		config:           config,
+		router:           router,
+		pipeline:         pipeline,
+		verifierRegistry: verifierRegistry,
+		pdfVerifier:      pdfVerifier,
 	}
 
 	s.setupRoutes()
@@ -95,6 +111,9 @@ func (s *Server) setupRoutes() {
 
 		// Validate endpoint
 		v1.POST("/validate", s.handleValidate)
+
+		// Verify signature endpoint
+		v1.POST("/verify", s.handleVerify)
 
 		// Info endpoint
 		v1.POST("/info", s.handleInfo)
@@ -415,4 +434,77 @@ func validateInvoice(inv *processor.Result) ([]string, []string) {
 	}
 
 	return errors, warnings
+}
+
+func (s *Server) handleVerify(c *gin.Context) {
+	body, err := c.GetRawData()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to read request body"})
+		return
+	}
+
+	if len(body) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "empty request body"})
+		return
+	}
+
+	// Find appropriate verifier
+	verifier, err := s.verifierRegistry.Detect(body)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "unsupported file format for signature verification"})
+		return
+	}
+
+	// Check if PDF verification is available
+	if verifier.Format() == "pdf" && !s.pdfVerifier.IsAvailable() {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error":   "PDF signature verification unavailable",
+			"details": "pdfsig tool not installed on server",
+		})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 60*time.Second)
+	defer cancel()
+
+	result, err := verifier.Verify(ctx, body)
+	if err != nil {
+		c.JSON(http.StatusUnprocessableEntity, gin.H{
+			"error":    "signature verification failed",
+			"details":  err.Error(),
+			"warnings": result.Warnings,
+		})
+		return
+	}
+
+	// Build response
+	response := VerifyResponse{
+		Valid:          result.Valid,
+		SignatureFound: result.SignatureFound,
+		SignatureValid: result.SignatureValid,
+		CertChainValid: result.CertChainValid,
+		NotRevoked:     result.NotRevoked,
+		TimestampValid: result.TimestampValid,
+		Format:         result.Format,
+		SignedAt:       result.SignedAt,
+		Warnings:       result.Warnings,
+		Errors:         result.Errors,
+	}
+
+	if result.Signer != nil {
+		response.Signer = &SignerInfoOutput{
+			Name:         result.Signer.Name,
+			Organization: result.Signer.Organization,
+			SerialNumber: result.Signer.SerialNumber,
+			Issuer:       result.Signer.Issuer,
+			ValidFrom:    &result.Signer.ValidFrom,
+			ValidTo:      &result.Signer.ValidTo,
+		}
+	}
+
+	if result.Valid {
+		c.JSON(http.StatusOK, response)
+	} else {
+		c.JSON(http.StatusUnprocessableEntity, response)
+	}
 }

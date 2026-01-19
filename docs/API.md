@@ -137,6 +137,67 @@ Get file format information without processing.
 
 ---
 
+### Verify Signature
+
+```
+POST /api/v1/verify
+```
+
+Verify digital signature on XML or PDF documents. Performs full verification including signature validity, certificate chain, and revocation status.
+
+**Headers:**
+- `Content-Type`: `application/xml` or `application/pdf`
+
+**Request Body:** Raw file content (binary)
+
+**Response:** [VerifyResponse](#verifyresponse)
+
+**Note:** PDF verification requires `pdfsig` tool (poppler-utils) installed on the server.
+
+**Example:**
+```bash
+curl -X POST http://localhost:8080/api/v1/verify \
+  -H "Content-Type: application/xml" \
+  --data-binary @invoice.xml
+```
+
+**Success Response (200):**
+```json
+{
+  "valid": true,
+  "signature_found": true,
+  "signature_valid": true,
+  "cert_chain_valid": true,
+  "not_revoked": true,
+  "format": "xml",
+  "signer": {
+    "name": "CÔNG TY ABC",
+    "organization": "ABC Company",
+    "serial_number": "1234567890",
+    "issuer": "VNPT-CA",
+    "valid_from": "2024-01-01T00:00:00Z",
+    "valid_to": "2025-12-31T23:59:59Z"
+  },
+  "signed_at": "2025-01-15T10:30:00Z",
+  "warnings": []
+}
+```
+
+**Failure Response (422):**
+```json
+{
+  "valid": false,
+  "signature_found": true,
+  "signature_valid": false,
+  "cert_chain_valid": false,
+  "not_revoked": false,
+  "errors": ["certificate has expired"],
+  "warnings": ["OCSP check skipped"]
+}
+```
+
+---
+
 ## Response Types
 
 ### ProcessResponse
@@ -171,6 +232,35 @@ Successful extraction response.
 | `format` | string | `xml`, `pdf`, `image`, or `unknown` |
 | `mime_type` | string | Detected MIME type |
 | `size` | int | File size in bytes |
+
+### VerifyResponse
+
+Signature verification response.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `valid` | boolean | Overall verification result |
+| `signature_found` | boolean | Whether a signature was found |
+| `signature_valid` | boolean | Whether the cryptographic signature is valid |
+| `cert_chain_valid` | boolean | Whether the certificate chain is valid |
+| `not_revoked` | boolean | Whether the certificate is not revoked |
+| `timestamp_valid` | boolean | Whether the timestamp is valid (if present) |
+| `format` | string | Document format (`xml` or `pdf`) |
+| `signer` | [SignerInfo](#signerinfo) | Signer certificate information |
+| `signed_at` | datetime | Signing timestamp (ISO 8601) |
+| `warnings` | string[] | Verification warnings |
+| `errors` | string[] | Verification errors |
+
+### SignerInfo
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | string | Signer common name |
+| `organization` | string | Signer organization |
+| `serial_number` | string | Certificate serial number |
+| `issuer` | string | Certificate issuer |
+| `valid_from` | datetime | Certificate validity start |
+| `valid_to` | datetime | Certificate validity end |
 
 ### ErrorResponse
 
@@ -376,5 +466,31 @@ invoice-processor process *.xml -f table
 # Output to JSON file
 invoice-processor process invoices/ -o results.json
 ```
+
+### Verify Signatures
+
+```bash
+# Verify single file
+invoice-processor verify invoice.xml
+
+# Verify PDF signature
+invoice-processor verify invoice.pdf
+
+# Verify with custom CA certificate
+invoice-processor verify --ca-file company.crt invoice.xml
+
+# Skip OCSP revocation check
+invoice-processor verify --skip-ocsp invoice.xml
+
+# JSON output
+invoice-processor verify -f json invoice.xml
+
+# Verify multiple files
+invoice-processor verify *.xml *.pdf
+```
+
+**Exit Codes:**
+- `0` - All signatures valid
+- `1` - One or more signatures invalid
 
 See `invoice-processor --help` for full CLI documentation.
